@@ -1,0 +1,47 @@
+{
+  "name": "octobat.js",
+  "version": "1.0.0",
+  "description": "octobat.js lib. binds a payment form to the Octobat tax service, to compute tax rates in real time at checkout time",
+  "main": "index.js",
+  "scripts": {
+    "build": "gulp build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0ctobat/octobat.js.git"
+  },
+  "keywords": [
+    "checkout",
+    "tax",
+    "calculation",
+    "vat",
+    "vatmoss",
+    "octobat",
+    "stripe",
+    "gocardless"
+  ],
+  "author": "Octobat SAS",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/0ctobat/octobat.js/issues"
+  },
+  "homepage": "https://github.com/0ctobat/octobat.js#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-changed": "^1.3.2",
+    "gulp-environments": "^0.1.1",
+    "gulp-load-plugins": "^1.3.0",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-strip-debug": "^1.1.0",
+    "gulp-uglify": "^2.0.0",
+    "gulp-util": "^3.0.7",
+    "del": "^2.2.2",
+    "run-sequence": "^1.2.2",
+    "browserify": "^14.0.0",
+    "uglify-js": "^2.7.5",
+    "vinyl-buffer": "^1.0.0",
+    "vinyl-source-stream": "^1.1.0",
+    "watchify": "^3.9.0"
+  }
+}
