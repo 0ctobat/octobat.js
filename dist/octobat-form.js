@@ -157,10 +157,7 @@ Buffer.TYPED_ARRAY_SUPPORT = typedArraySupport()
 
 if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
     typeof console.error === 'function') {
-  console.error(
-    'This browser lacks typed array (Uint8Array) support which is required by ' +
-    '`buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
-  )
+  void 0
 }
 
 function typedArraySupport () {
@@ -2160,7 +2157,7 @@ makeHTTPCall = function(url, method, headers, async, payload, callback) {
 }
 
 debug = function(e, t) {
-  return console.log(t), alert(t.message || JSON.stringify(t))
+  return void 0, void 0
 }
 
 encodeURI = function(e) {
@@ -2241,7 +2238,7 @@ validatePlan = function(request_identifier) {
     },
     error: function(e, data) {
       sendEvent("octobat.form.init.failed", {message: data.message});
-      console.log(data.error.message);
+      void 0;
     }
   });
 }
@@ -2261,7 +2258,7 @@ validateCharge = function(request_identifier) {
     },
     error: function(e, data) {
       sendEvent("octobat.form.init.failed", {message: data.message});
-      console.log(data.error.message);
+      void 0;
     }
   });
 }
@@ -2298,7 +2295,7 @@ validateCoupon = function() {
         sendEvent("octobat.form.coupon.invalid", {message: "Invalid or expired coupon"});
         Octobat.setCoupon(null);
         calculateTaxAPICall();
-        console.log(data.error.message);
+        void 0;
       }
     });
   }
@@ -2323,7 +2320,7 @@ getCustomerIPAddress = function() {
     },
     error: function(e, data) {
       Octobat.setMossCompliance(false);
-      console.log(data);
+      void 0;
     }
   });
 }
@@ -2338,13 +2335,13 @@ getCustomerBankCountry = function() {
         bincode = card_number.substring(0,6);
         makeHTTPCall("https://www.binlist.net/json/" + bincode, 'GET', null, true, null, {
           success: function(e, data) {
-            console.log(data);
+            void 0;
             Octobat.setCustomerBankCountry(data.country_code);
             setSelectedCountry();
           },
           error: function(e, data) {
             Octobat.setMossCompliance(false);
-            console.log(data);
+            void 0;
           }
         });
       }
@@ -2474,7 +2471,7 @@ getGatewayPkeyAPICall = function(async) {
     },
     error: function(e, data) {
       sendEvent("octobat.form.gateway_pkey.error", {message: data.message});
-      console.log(data.message);
+      void 0;
     }
   });
 }
@@ -2530,7 +2527,7 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
         sendEvent("octobat.form.init.complete", {request_identifier: request_identifier});
       }
       
-      console.log(data);
+      void 0;
       Octobat.setTaxEvidence(data);
       Octobat.setTaxRate(data.applied_rate);
       
@@ -2587,11 +2584,11 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
           }
         }
 
-        console.log(extratax);
-        console.log(discount);
-        console.log(net);
-        console.log(tax);
-        console.log(total);
+        void 0;
+        void 0;
+        void 0;
+        void 0;
+        void 0;
 
         fillBindedFields('octobat-net', (net / 100).toFixed(2));
         fillBindedFields('octobat-discount', (discount / 100).toFixed(2));
@@ -2775,7 +2772,7 @@ var OctobatJS = function() {
   this.tax_evidence = {},
   this.tax_rate = null,
   this.transaction = {},
-  this.server_host = 'http://pmgw.octobat.dev:3052',
+  this.server_host = 'https://pmgw.octobat.com',
   this.auth_token = null,
   this.form_selector = '#octobat-payment-form',
   this.moss_compliance = false,

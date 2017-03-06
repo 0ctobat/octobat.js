@@ -1,6 +1,6 @@
 {
   "name": "octobat.js",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "octobat.js lib. binds a payment form to the Octobat tax service, to compute tax rates in real time at checkout time",
   "main": "index.js",
   "scripts": {
