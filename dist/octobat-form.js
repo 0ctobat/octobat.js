@@ -157,7 +157,10 @@ Buffer.TYPED_ARRAY_SUPPORT = typedArraySupport()
 
 if (!Buffer.TYPED_ARRAY_SUPPORT && typeof console !== 'undefined' &&
     typeof console.error === 'function') {
-  void 0
+  console.error(
+    'This browser lacks typed array (Uint8Array) support which is required by ' +
+    '`buffer` v5.x. Use `buffer` v4.x if you require old browser support.'
+  )
 }
 
 function typedArraySupport () {
@@ -2157,7 +2160,7 @@ makeHTTPCall = function(url, method, headers, async, payload, callback) {
 }
 
 debug = function(e, t) {
-  return void 0, void 0
+  return console.log(t), alert(t.message || JSON.stringify(t))
 }
 
 encodeURI = function(e) {
@@ -2238,7 +2241,7 @@ validatePlan = function(request_identifier) {
     },
     error: function(e, data) {
       sendEvent("octobat.form.init.failed", {message: data.message});
-      void 0;
+      console.log(data.error.message);
     }
   });
 }
@@ -2258,26 +2261,28 @@ validateCharge = function(request_identifier) {
     },
     error: function(e, data) {
       sendEvent("octobat.form.init.failed", {message: data.message});
-      void 0;
+      console.log(data.error.message);
     }
   });
 }
 
 validateCoupon = function() {
   var f = document.querySelector(Octobat.form_selector);
+  var octobat_gateway = "stripe"; // data-gateway
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
   var coupon = getBindedValue("coupon");
-  var recurring;
+  
+  var params;
   
   if (f.getAttribute("data-plan") != null && f.getAttribute("data-plan") != void 0) {
-   recurring = true;
+    params = JSON.stringify({recurring: true, gateway: octobat_gateway});
   }
   else {
-    recurring = false;
+    params = JSON.stringify({recurring: false});
   }
       
   if (coupon != "") {
-    makeAPICall(Octobat.serverHost() + '/coupons/' + coupon + '?recurring=' + recurring, 'GET', {}, true, null, octobat_pkey, {
+    makeAPICall(Octobat.serverHost() + '/coupons/' + coupon, 'GET', {}, true, params, octobat_pkey, {
       success: function(e, data) {
         
         // Manage coupon
@@ -2293,7 +2298,7 @@ validateCoupon = function() {
         sendEvent("octobat.form.coupon.invalid", {message: "Invalid or expired coupon"});
         Octobat.setCoupon(null);
         calculateTaxAPICall();
-        void 0;
+        console.log(data.error.message);
       }
     });
   }
@@ -2306,16 +2311,19 @@ validateCoupon = function() {
   
 }
 
-getCustomerIPAddress = function() {  
-  makeHTTPCall("https://checkout-form.herokuapp.com/ip.json", 'GET', null, true, null, {
+getCustomerIPAddress = function() {
+  var f = document.querySelector(Octobat.form_selector);
+  var octobat_pkey = f.getAttribute("data-octobat-pkey");
+  
+  makeAPICall(Octobat.serverHost() + '/utils/ip.json', 'GET', {}, true, null, octobat_pkey, {  
     success: function(e, data) {
       Octobat.setCustomerIP(data.query);
-      Octobat.setCustomerIPCountry(data.countryCode);
+      Octobat.setCustomerIPCountry(data.country_code);
       setSelectedCountry();
     },
     error: function(e, data) {
       Octobat.setMossCompliance(false);
-      void 0;
+      console.log(data);
     }
   });
 }
@@ -2330,13 +2338,13 @@ getCustomerBankCountry = function() {
         bincode = card_number.substring(0,6);
         makeHTTPCall("https://www.binlist.net/json/" + bincode, 'GET', null, true, null, {
           success: function(e, data) {
-            void 0;
+            console.log(data);
             Octobat.setCustomerBankCountry(data.country_code);
             setSelectedCountry();
           },
           error: function(e, data) {
             Octobat.setMossCompliance(false);
-            void 0;
+            console.log(data);
           }
         });
       }
@@ -2466,7 +2474,7 @@ getGatewayPkeyAPICall = function(async) {
     },
     error: function(e, data) {
       sendEvent("octobat.form.gateway_pkey.error", {message: data.message});
-      void 0;
+      console.log(data.message);
     }
   });
 }
@@ -2487,15 +2495,34 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
   var f = document.querySelector(Octobat.form_selector);
   var octobat_gateway = "stripe"; // data-gateway
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
-  var params = JSON.stringify({
-    validate_tax_number: f.getAttribute("data-validate-tax-number") || false,
-    transaction_type: f.getAttribute("data-transaction-type") || "eservice",
-    customer_country: Octobat.selectedCustomerCountry(),
-    customer_zip_code: getBindedValue('zip-code'),
-    customer_tax_number: getBindedValue('tax-number')
-  });
   
-  return makeAPICall(Octobat.serverHost() + '/taxes', 'GET', {}, async, params, octobat_pkey, {
+  
+  var args = {
+    validate_tax_number: f.getAttribute("data-validate-tax-number") || false,
+    product_type: f.getAttribute("data-transaction-type") || "eservice",
+    customer_billing_address_country: getBindedValue('country'),
+    customer_billing_address_zip: getBindedValue('zip-code'),
+    customer_tax_number: getBindedValue('tax-number')
+  };
+  
+  if (Octobat.mossCompliance() === true) {
+    card_number = getBindedValue('number').replace(/\D/g, '');
+  
+    if (card_number.length >= 6) {
+      bincode = card_number.substring(0,6);
+      args['payment_source_prefix'] = bincode;
+      args['payment_source_type'] = "card";
+      args['payment_source_country'] = Octobat.customerBankCountry();    
+    }
+    
+    args['ip_address'] = Octobat.customerIP();
+  }
+  
+  
+  
+  var params = JSON.stringify(args);
+  
+  return makeAPICall(Octobat.serverHost() + '/tax_evidence_requests', 'POST', {}, async, params, octobat_pkey, {
     success: function(e, data) {
       var extratax, tax, total;
       
@@ -2503,10 +2530,12 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
         sendEvent("octobat.form.init.complete", {request_identifier: request_identifier});
       }
       
-      Octobat.setTaxes(data);
-      Octobat.setTransaction(data.transaction);
+      console.log(data);
+      Octobat.setTaxEvidence(data);
+      Octobat.setTaxRate(data.applied_rate);
       
-      if (data.transaction.tax_id_validity != null && data.transaction.tax_id_validity == false) {
+      
+      if (data.tax_id_validation != null && data.tax_id_validation.is_valid == false) {
         sendEvent("octobat.tax.calculation.done", {tax: data, warning: true, message: "Invalid tax ID"});
         Octobat.setValidTaxID(false);
       }
@@ -2531,7 +2560,7 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
 
         // If tax is excluded from initial amount
         if (tax_included == "excluded") {
-          t = parseFloat(data.total || 0);
+          t = parseFloat(Octobat.getTaxRate() || 0);
           extratax = parseInt(amount) * quantity;
           discount = getDiscount(extratax);
           net = extratax - discount;
@@ -2540,7 +2569,7 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
         }
         // If tax is included from initial amount
         else {
-          t = parseFloat(data.total || 0);
+          t = parseFloat(Octobat.getTaxRate() || 0);
           if (t > 0) {
             t_discount = getDiscount(parseInt(amount) * quantity);
             discount = Math.round(t_discount / (1 + t / 100));
@@ -2558,11 +2587,11 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
           }
         }
 
-        void 0;
-        void 0;
-        void 0;
-        void 0;
-        void 0;
+        console.log(extratax);
+        console.log(discount);
+        console.log(net);
+        console.log(tax);
+        console.log(total);
 
         fillBindedFields('octobat-net', (net / 100).toFixed(2));
         fillBindedFields('octobat-discount', (discount / 100).toFixed(2));
@@ -2667,6 +2696,8 @@ serializeForm = function(charge_type) {
   gateway = "stripe";
   params = {};
   
+  params.gateway = gateway;
+  
   params.customer = {
     name: getBindedValue("name"),
     email: getBindedValue("email"),
@@ -2701,11 +2732,10 @@ serializeForm = function(charge_type) {
     params.subscription = {
       plan: f.getAttribute("data-plan"),
       quantity: parseInt(f.getAttribute("data-quantity")) || parseInt(1),
-      tax_percent: "excluded" === tax_included ? Octobat.getTaxes().total : null,
+      tax_percent: "excluded" === tax_included ? Octobat.getTaxRate() : null,
       transaction_type: f.getAttribute("data-transaction-type") || "eservice",
       metadata: {
-        tax_included: f.getAttribute("data-taxes") || "excluded",
-        taxes: Octobat.getTaxes()
+        tax_included: f.getAttribute("data-taxes") || "excluded"
       }
     };
     
@@ -2713,37 +2743,20 @@ serializeForm = function(charge_type) {
       params.subscription.coupon = Octobat.getCoupon().id;
     }
     
-    if (Octobat.mossCompliance() === true) {
-      params.subscription.metadata.evidence = {
-        customer_ip: Octobat.customerIP(),
-        customer_billing_country: getBindedValue("country"),
-        customer_ip_country: Octobat.customerIPCountry(),
-        customer_bank_country: Octobat.customerBankCountry(),
-        customer_selected_country: Octobat.selectedCustomerCountry()
-      };
-    }
+    params.subscription.metadata.evidence = Octobat.getTaxEvidence().id;
     
   }
   else {
     params.charge = {
       charge: f.getAttribute("data-charge"),
-      tax_percent: "excluded" === f.getAttribute("data-taxes") ? Octobat.getTaxes().total : null,
+      tax_percent: "excluded" === f.getAttribute("data-taxes") ? Octobat.getTaxRate() : null,
       transaction_type: f.getAttribute("data-transaction-type") || "eservice",
       metadata: {
-        tax_included: f.getAttribute("data-taxes") || "excluded",
-        taxes: Octobat.getTaxes()
+        tax_included: f.getAttribute("data-taxes") || "excluded"
       }
     };
     
-    if (Octobat.mossCompliance() === true) {
-      params.charge.metadata.evidence = {
-        customer_ip: Octobat.customerIP(),
-        customer_billing_country: getBindedValue("country"),
-        customer_ip_country: Octobat.customerIPCountry(),
-        customer_bank_country: Octobat.customerBankCountry(),
-        customer_selected_country: Octobat.selectedCustomerCountry()
-      };
-    }
+    params.charge.metadata.evidence = Octobat.getTaxEvidence().id;
     
     if (Octobat.getCoupon() != null) {
       params.charge.coupon = Octobat.getCoupon().id;
@@ -2759,9 +2772,10 @@ var OctobatJS = function() {
   this.form_is_submittable = false;
   this.form_is_displayable = false;
   this.request_identifier = null;
-  this.taxes = {},
+  this.tax_evidence = {},
+  this.tax_rate = null,
   this.transaction = {},
-  this.server_host = 'https://apiv1.octobat.com',
+  this.server_host = 'http://pmgw.octobat.dev:3052',
   this.auth_token = null,
   this.form_selector = '#octobat-payment-form',
   this.moss_compliance = false,
@@ -2772,7 +2786,7 @@ var OctobatJS = function() {
   this.valid_tax_id = null,
   this.coupon = null,
   this.plan = null,
-  this.version = "1.0.0"
+  this.version = "2.0.0"
 }
 
 
@@ -2845,11 +2859,17 @@ OctobatJS.prototype = {
   serverHost: function() {
     return this.server_host;
   },
-  getTaxes: function() {
-    return this.taxes;
+  getTaxEvidence: function() {
+    return this.tax_evidence;
   },
-  setTaxes: function(e) {
-    return this.taxes = e;
+  setTaxEvidence: function(e) {
+    return this.tax_evidence = e;
+  },
+  getTaxRate: function() {
+    return this.tax_rate;
+  },
+  setTaxRate: function(e) {
+    return this.tax_rate = e;
   },
   getTransaction: function() {
     return this.transaction;
