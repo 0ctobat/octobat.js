@@ -2312,7 +2312,7 @@ getCustomerIPAddress = function() {
   var f = document.querySelector(Octobat.form_selector);
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
   
-  makeAPICall(Octobat.serverHost() + '/utils/ip.json', 'GET', {}, true, null, octobat_pkey, {  
+  makeAPICall(Octobat.serverHost() + '/utils/ip.json', 'GET', {}, true, null, octobat_pkey, {
     success: function(e, data) {
       Octobat.setCustomerIP(data.query);
       Octobat.setCustomerIPCountry(data.country_code);
@@ -2328,12 +2328,16 @@ getCustomerIPAddress = function() {
 
 
 getCustomerBankCountry = function() {  
+  var f = document.querySelector(Octobat.form_selector);
+  var octobat_pkey = f.getAttribute("data-octobat-pkey");
+  
   if (document.querySelector("[data-octobat='number']") !== null) {
     document.querySelector("[data-octobat='number']").addEventListener('change', function() {
       card_number = getBindedValue('number').replace(/\D/g, '');
       if (card_number.length >= 6) {
         bincode = card_number.substring(0,6);
-        makeHTTPCall("https://www.binlist.net/json/" + bincode, 'GET', null, true, null, {
+        
+        makeAPICall(Octobat.serverHost() + '/utils/iin.json?iin=' + bincode, 'GET', {}, true, null, octobat_pkey, {
           success: function(e, data) {
             void 0;
             Octobat.setCustomerBankCountry(data.country_code);
@@ -2783,7 +2787,7 @@ var OctobatJS = function() {
   this.valid_tax_id = null,
   this.coupon = null,
   this.plan = null,
-  this.version = "2.0.0"
+  this.version = "2.0.1"
 }
 
 
