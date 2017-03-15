@@ -647,7 +647,7 @@ serializeForm = function(charge_type) {
   else {
     params.charge = {
       charge: f.getAttribute("data-charge"),
-      tax_percent: "excluded" === f.getAttribute("data-taxes") ? Octobat.getTaxRate() : null,
+      tax_percent: "excluded" === tax_included ? Octobat.getTaxRate() : null,
       transaction_type: f.getAttribute("data-transaction-type") || "eservice",
       metadata: {
         tax_included: f.getAttribute("data-taxes") || "excluded"
@@ -684,7 +684,7 @@ var OctobatJS = function() {
   this.valid_tax_id = null,
   this.coupon = null,
   this.plan = null,
-  this.version = "2.0.1"
+  this.version = "2.0.2"
 }
 
 
