@@ -2566,11 +2566,15 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
           discount = getDiscount(extratax);
           
           if (Octobat.getCoupon() != null && Octobat.getCoupon().amount_off != null) {
-            void 0
-            p_tax = Math.round((parseInt(amount) * quantity) * t / 100);
-            total = extratax + p_tax - discount;
-            net = Math.round(parseInt(total) / (1 + t / 100));
-            tax = Math.round((net) * t / 100)
+            
+            net = extratax - discount;
+            tax = Math.round((parseInt(amount) * quantity - discount) * t / 100);
+            total = extratax - discount + tax;
+            
+            //p_tax = Math.round((parseInt(amount) * quantity) * t / 100);
+            //total = extratax + p_tax - discount;
+            //net = Math.round(parseInt(total) / (1 + t / 100));
+            //tax = Math.round((net) * t / 100)
           }
           else {
             net = extratax - discount;
