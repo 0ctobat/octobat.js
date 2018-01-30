@@ -2811,7 +2811,7 @@ var OctobatJS = function() {
   this.valid_tax_id = null,
   this.coupon = null,
   this.plan = null,
-  this.version = "2.1.0"
+  this.version = "2.1.1"
 }
 
 
