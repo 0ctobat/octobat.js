@@ -37,35 +37,35 @@ var
 
 // Javascript Bundling
 gulp.task('js', function() {
-  
+
   var a = p.browserify({
     entries: src,
     insertGlobals : true,
     standalone: 'Octobat',
     debug: true
   });
-  
+
   a.bundle().on('error', handleError)
     .pipe(p.source('octobat-form.min.js'))
     .pipe(p.buffer())
     .pipe(p.stripDebug())
     .pipe(p.uglify(uglifyOpts))
     .pipe(gulp.dest(js.out));
-  
-  
+
+
   var b = p.browserify({
     entries: src,
     insertGlobals : true,
     standalone: 'Octobat',
     debug: true
   });
-  
+
   b.bundle().on('error', handleError)
     .pipe(p.source('octobat-form.js'))
     .pipe(p.buffer())
     .pipe(p.stripDebug())
     .pipe(gulp.dest(js.out));
-  
+
 });
 
 

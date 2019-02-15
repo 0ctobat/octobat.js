@@ -2105,18 +2105,18 @@ var OctobatJS, activate, makeAPICall, isIE, sendEvent, debug, encodeURI, parseJS
 
 makeAPICall = function(url, method, headers, async, payload, api_key, callback) {
   headers['Authorization'] = "Basic " + btoa(api_key + ":");
-      
+
   return makeHTTPCall(url, method, headers, async, payload, callback);
 }
 
 makeHTTPCall = function(url, method, headers, async, payload, callback) {
-      
+
   if (callback == null)
     callback = {};
-  
+
   var request;
   request = new XMLHttpRequest;
-  
+
   request.onreadystatechange = function() {
     var e, a, r;
     if (request.readyState === 4) {
@@ -2133,13 +2133,13 @@ makeHTTPCall = function(url, method, headers, async, payload, callback) {
       return void 0;
     }
   }
-  
+
   if (method === "POST") {
     request.open(method, url, async);
     request.setRequestHeader("Access-Control-Allow-Origin", "true");
     request.setRequestHeader("Content-Type", "application/json");
   }
-  
+
   else {
     if (payload !== null) {
       url += encodeURI(JSON.parse(payload));
@@ -2147,13 +2147,13 @@ makeHTTPCall = function(url, method, headers, async, payload, callback) {
     }
     request.open(method, url, async);
   }
-  
+
   for (var key in headers) {
     request.setRequestHeader(key, headers[key]);
   }
-  
+
   return request.send(payload);
-  
+
 }
 
 debug = function(e, t) {
@@ -2185,7 +2185,7 @@ isIE = function() {
 sendEvent = function(e, t) {
   var octobat_event, form;
   form = document.querySelector(Octobat.form_selector);
-  
+
   if (void 0 !== window.jQuery) {
     octobat_event = jQuery.Event(e);
     octobat_event.detail = t;
@@ -2202,7 +2202,7 @@ sendEvent = function(e, t) {
         bubbles: !0,
         cancelable: !0
       });
-    }    
+    }
     return form.dispatchEvent(octobat_event);
   }
 }
@@ -2227,14 +2227,14 @@ validatePlan = function(request_identifier) {
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
   var plan_id = f.getAttribute("data-plan");
   var params = JSON.stringify({gateway: octobat_gateway});
-  
+
   return makeAPICall(Octobat.serverHost() + '/plans/' + plan_id, 'GET', {}, true, params, octobat_pkey, {
     success: function(e, data) {
       var f = document.querySelector(Octobat.form_selector);
       f.setAttribute("data-amount", data.plan.amount);
       f.setAttribute("data-currency", data.plan.currency);
       Octobat.setPlan(data.plan);
-      calculateTaxAPICall({}, true, true, request_identifier);        
+      calculateTaxAPICall({}, true, true, request_identifier);
     },
     error: function(e, data) {
       sendEvent("octobat.form.init.failed", {message: data.message});
@@ -2248,7 +2248,7 @@ validateCharge = function(request_identifier) {
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
   var jwt = f.getAttribute("data-charge");
   var params = JSON.stringify({charge: jwt});
-  
+
   return makeAPICall(Octobat.serverHost() + '/charges/encoded_information', 'POST', {}, true, params, octobat_pkey, {
     success: function(e, data) {
       var f = document.querySelector(Octobat.form_selector);
@@ -2263,28 +2263,50 @@ validateCharge = function(request_identifier) {
   });
 }
 
+validateSku = function(request_identifier) {
+  var f = document.querySelector(Octobat.form_selector);
+  var octobat_gateway = f.getAttribute("data-gateway") || "stripe"; // data-gateway
+  var octobat_pkey = f.getAttribute("data-octobat-pkey");
+  var sku_id = f.getAttribute("data-sku");
+  var params = JSON.stringify({gateway: octobat_gateway});
+
+  return makeAPICall(Octobat.serverHost() + '/skus/' + sku_id, 'GET', {}, true, params, octobat_pkey, {
+    success: function(e, data) {
+      var f = document.querySelector(Octobat.form_selector);
+      f.setAttribute("data-amount", data.sku.price);
+      f.setAttribute("data-currency", data.sku.currency);
+      Octobat.setSku(data.sku);
+      calculateTaxAPICall({}, true, true, request_identifier);
+    },
+    error: function(e, data) {
+      sendEvent("octobat.form.init.failed", {message: data.message});
+      void 0;
+    }
+  });
+}
+
 validateCoupon = function() {
   var f = document.querySelector(Octobat.form_selector);
   var octobat_gateway = f.getAttribute("data-gateway") || "stripe"; // data-gateway
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
   var coupon = getBindedValue("coupon");
-  
+
   var params;
-  
+
   if (f.getAttribute("data-plan") != null && f.getAttribute("data-plan") != void 0) {
     params = JSON.stringify({recurring: true, gateway: octobat_gateway});
   }
   else {
     params = JSON.stringify({recurring: false});
   }
-      
+
   if (coupon != "") {
     makeAPICall(Octobat.serverHost() + '/coupons/' + coupon, 'GET', {}, true, params, octobat_pkey, {
       success: function(e, data) {
-        
+
         // Manage coupon
         Octobat.setCoupon(data.coupon);
-        
+
         // Display coupon
         sendEvent("octobat.form.coupon.valid", {coupon: data.coupon, message: "Coupon is valid"});
         fillBindedFields('octobat-coupon-check', "OK");
@@ -2304,14 +2326,14 @@ validateCoupon = function() {
     Octobat.setCoupon(null);
     calculateTaxAPICall();
   }
-  
-  
+
+
 }
 
 getCustomerIPAddress = function() {
   var f = document.querySelector(Octobat.form_selector);
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
-  
+
   makeAPICall(Octobat.serverHost() + '/utils/ip.json', 'GET', {}, true, null, octobat_pkey, {
     success: function(e, data) {
       Octobat.setCustomerIP(data.query);
@@ -2327,16 +2349,16 @@ getCustomerIPAddress = function() {
 
 
 
-getCustomerBankCountry = function() {  
+getCustomerBankCountry = function() {
   var f = document.querySelector(Octobat.form_selector);
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
-  
+
   if (document.querySelector("[data-octobat='number']") !== null) {
     document.querySelector("[data-octobat='number']").addEventListener('change', function() {
       card_number = getBindedValue('number').replace(/\D/g, '');
       if (card_number.length >= 6) {
         bincode = card_number.substring(0,6);
-        
+
         makeAPICall(Octobat.serverHost() + '/utils/iin.json?iin=' + bincode, 'GET', {}, true, null, octobat_pkey, {
           success: function(e, data) {
             void 0;
@@ -2357,7 +2379,7 @@ getCustomerBankCountry = function() {
 }
 
 setSelectedCountry = function() {
-  
+
   if (Octobat.mossCompliance() === true) {
     if (getBindedValue('country') == Octobat.customerBankCountry() || getBindedValue('country') == Octobat.customerIPCountry()) {
       Octobat.setSelectedCustomerCountry(getBindedValue('country'));
@@ -2408,19 +2430,22 @@ bindOctobatForm = function() {
   if (f !== null) {
     bindFormIsDisplayable();
     bindFormIsSubmittable();
-    
+
     if (f.getAttribute("data-moss-compliance") !== null && f.getAttribute("data-moss-compliance") == "true") {
       Octobat.setMossCompliance(true);
       getCustomerIPAddress();
       getCustomerBankCountry();
     }
-    
+
     if (f.getAttribute("data-plan") !== null)
       validatePlan(Octobat.requestIdentifier());
-      
+
     if (f.getAttribute("data-charge") !== null)
       validateCharge(Octobat.requestIdentifier());
-      
+
+    if (f.getAttribute("data-sku") !== null)
+      validateSku(Octobat.requestIdentifier());
+
     getGatewayPkeyAPICall();
     bindChangeEvents();
   }
@@ -2438,19 +2463,19 @@ bindFormIsDisplayable = function() {
       Octobat.setFormIsDisplayable(true);
     });
   }
-  
+
 }
 
 bindFormIsSubmittable = function() {
   if (void 0 !== window.jQuery) {
     $(Octobat.form_selector).on('octobat.form.gateway_pkey.retrieved', function(data) {
-      Octobat.setFormIsSubmittable(true); 
+      Octobat.setFormIsSubmittable(true);
     });
   }
   else {
     var f = document.querySelector(Octobat.form_selector);
     f.addEventListener("octobat.form.gateway_pkey.retrieved", function(data) {
-      Octobat.setFormIsSubmittable(true); 
+      Octobat.setFormIsSubmittable(true);
     });
   }
 }
@@ -2459,13 +2484,13 @@ bindFormIsSubmittable = function() {
 getGatewayPkeyAPICall = function(async) {
   if (async == null)
     async = true;
-    
+
   var f = document.querySelector(Octobat.form_selector);
   var octobat_gateway = f.getAttribute("data-gateway") || "stripe"; // data-gateway
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
   var using_checkout = Octobat.form_selector === '#octobat-checkout-form' ? true : false;
   var params = JSON.stringify({gateway: octobat_gateway, js_version: Octobat.getVersion(), using_checkout: using_checkout});
-  
+
   return makeAPICall(Octobat.serverHost() + '/tokens/gateway_pkey', 'GET', {}, async, params, octobat_pkey, {
     success: function(e, t) {
       var f = document.querySelector(Octobat.form_selector);
@@ -2481,23 +2506,23 @@ getGatewayPkeyAPICall = function(async) {
 }
 
 calculateTaxAPICall = function(handler, async, just_completed, request_identifier) {
-  
+
   if (just_completed == null) {
     just_completed = false;
   }
-      
+
   setSelectedCountry();
   if (handler == null)
     handler = {};
-    
+
   if (async == null)
     async = true;
-    
+
   var f = document.querySelector(Octobat.form_selector);
   var octobat_gateway = f.getAttribute("data-gateway") || "stripe"; // data-gateway
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
-  
-  
+
+
   var args = {
     validate_tax_number: f.getAttribute("data-validate-tax-number") || false,
     product_type: f.getAttribute("data-transaction-type") || "eservice",
@@ -2505,37 +2530,37 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
     customer_billing_address_zip: getBindedValue('zip-code'),
     customer_tax_number: getBindedValue('tax-number')
   };
-  
+
   if (Octobat.mossCompliance() === true) {
     card_number = getBindedValue('number').replace(/\D/g, '');
-  
+
     if (card_number.length >= 6) {
       bincode = card_number.substring(0,6);
       args['payment_source_prefix'] = bincode;
       args['payment_source_type'] = "card";
-      args['payment_source_country'] = Octobat.customerBankCountry();    
+      args['payment_source_country'] = Octobat.customerBankCountry();
     }
-    
+
     args['ip_address'] = Octobat.customerIP();
   }
-  
-  
-  
+
+
+
   var params = JSON.stringify(args);
-  
+
   return makeAPICall(Octobat.serverHost() + '/tax_evidence_requests', 'POST', {}, async, params, octobat_pkey, {
     success: function(e, data) {
       var extratax, tax, total;
-      
+
       if (just_completed === true) {
         sendEvent("octobat.form.init.complete", {request_identifier: request_identifier});
       }
-      
+
       void 0;
       Octobat.setTaxEvidence(data);
       Octobat.setTaxRate(data.applied_rate);
-      
-      
+
+
       if (data.tax_id_validation != null && data.tax_id_validation.is_valid == false) {
         sendEvent("octobat.tax.calculation.done", {tax: data, warning: true, message: "Invalid tax ID"});
         Octobat.setValidTaxID(false);
@@ -2546,17 +2571,17 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
           Octobat.setValidTaxID(null);
         }
       }
-      
+
       // Handle taxes
-      
-      
-      
+
+
+
       if (Octobat.formIsDisplayable() || just_completed === true) {
         var f = document.querySelector(Octobat.form_selector);
 
         tax_included = f.getAttribute("data-taxes") || "excluded";
         amount = f.getAttribute("data-amount");
-        
+
         quantity = parseInt(f.getAttribute("data-quantity")) || 1;
 
         // If tax is excluded from initial amount
@@ -2564,13 +2589,13 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
           t = parseFloat(Octobat.getTaxRate() || 0);
           extratax = parseInt(amount) * quantity;
           discount = getDiscount(extratax);
-          
+
           if (Octobat.getCoupon() != null && Octobat.getCoupon().amount_off != null) {
-            
+
             net = extratax - discount;
             tax = Math.round((parseInt(amount) * quantity - discount) * t / 100);
             total = extratax - discount + tax;
-            
+
             //p_tax = Math.round((parseInt(amount) * quantity) * t / 100);
             //total = extratax + p_tax - discount;
             //net = Math.round(parseInt(total) / (1 + t / 100));
@@ -2614,7 +2639,7 @@ calculateTaxAPICall = function(handler, async, just_completed, request_identifie
         fillBindedFields('octobat-taxes', (tax / 100).toFixed(2));
         fillBindedFields('octobat-total', (total / 100).toFixed(2));
       }
-      
+
     },
     error: function(e, data) {
       handler.complete !== void 0 ? handler.complete(e, data) : (handler.error || debug)(e, a);
@@ -2638,33 +2663,41 @@ getDiscount = function(extratax) {
 }
 
 chargeCustomer = function(charge_type, handler) {
-      
+
   var data_element, form_validation, error_callback, params;
   var f = document.querySelector(Octobat.form_selector);
   var octobat_pkey = f.getAttribute("data-octobat-pkey");
-  
+
   var gateway = f.getAttribute("data-gateway") || "stripe";
-  
+
   if (handler == null)
     handler = {};
-  
+
   // Validate form data before submitting
-  data_element = charge_type === "subscriptions" ? "plan" : "charge";
-  
+  if (charge_type === "subscriptions") {
+    data_element = "plan"
+  }
+  else if (f.getAttribute("data-sku") !== void 0 && f.getAttribute("data-sku") !== "") {
+    data_element = "sku"
+  }
+  else {
+    data_element = "charge"
+  }
+
   // URL
   var api_call_url = charge_type === "charges" ? "charges" : "subscriptions";
-  
+
   if (form_validation = validateFormElements(data_element), form_validation === true) {
     // Calculate definitive tax (must be synchronous)
     calculateTaxAPICall({}, false);
-    
+
     // Serialize form
     params = serializeForm(charge_type);
-    
+
     // Make API calls properly
     headers = {'JWT': Octobat.authToken()};
     makeAPICall(Octobat.serverHost() + '/' + api_call_url, 'POST', headers, true, params, octobat_pkey, handler);
-    
+
   }
   else {
     error_callback = handler.error || debug;
@@ -2676,7 +2709,7 @@ chargeCustomer = function(charge_type, handler) {
 validateFormElements = function(data_element) {
   var f = document.querySelector(Octobat.form_selector);
   var element = f.getAttribute("data-" + data_element);
-  
+
   if (element === void 0 || element === "") {
     return "You must provide a value for data-" + data_element;
   }
@@ -2698,22 +2731,22 @@ validateEmail = function(email) {
 
 serializeForm = function(charge_type) {
   var params, gateway, f, business_type;
-  
+
   if (charge_type == null)
     charge_type = "subscriptions";
-  
+
   f = document.querySelector(Octobat.form_selector);
   var validate_tax_number = f.getAttribute("data-validate-tax-number") || false
   var tax_included = f.getAttribute("data-taxes") || "excluded";
   var existing_customer_id = f.getAttribute("data-customer-id") || null;
   var final_redirect_url = f.getAttribute("data-final-redirect-url") || null;
   var failure_redirect_url = f.getAttribute("data-failure-redirect-url") || null;
-  
+
   gateway = f.getAttribute("data-gateway") || "stripe";
   params = {};
-  
+
   params.gateway = gateway;
-  
+
   params.customer = {
     name: getBindedValue("name"),
     email: getBindedValue("email"),
@@ -2724,7 +2757,7 @@ serializeForm = function(charge_type) {
     state: getBindedValue("state"),
     country: getBindedValue("country")
   };
-  
+
   if (validate_tax_number && Octobat.getValidTaxID() != null && Octobat.getValidTaxID() == false) {
     params.customer.tax_number = null;
     business_type = 'B2C';
@@ -2733,26 +2766,26 @@ serializeForm = function(charge_type) {
     params.customer.tax_number = getBindedValue("tax-number") === "" ? null : getBindedValue("tax-number");
     business_type = getBindedValue("tax-number") === "" ? 'B2C' : 'B2B';
   }
-  
-  
+
+
   if (existing_customer_id != null) {
     params.customer.customer_id = existing_customer_id;
   }
-  
+
   if (getBindedValue("cardToken") != "") {
     params.customer.card = getBindedValue("cardToken");
   }
-  
+
   params.customer.business_type = business_type;
-  
+
   if (final_redirect_url != null) {
     params.final_redirect_url = final_redirect_url;
   }
-  
+
   if (failure_redirect_url != null) {
     params.failure_redirect_url = failure_redirect_url;
   }
-  
+
   if (charge_type == "subscriptions") {
     params.subscription = {
       plan: f.getAttribute("data-plan"),
@@ -2763,32 +2796,33 @@ serializeForm = function(charge_type) {
         tax_included: f.getAttribute("data-taxes") || "excluded"
       }
     };
-    
+
     if (Octobat.getCoupon() != null) {
       params.subscription.coupon = Octobat.getCoupon().id;
     }
-    
+
     params.subscription.metadata.evidence = Octobat.getTaxEvidence().id;
-    
+
   }
   else {
     params.charge = {
       charge: f.getAttribute("data-charge"),
+      sku: f.getAttribute("data-sku"),
       tax_percent: "excluded" === tax_included ? Octobat.getTaxRate() : null,
       transaction_type: f.getAttribute("data-transaction-type") || "eservice",
       metadata: {
         tax_included: f.getAttribute("data-taxes") || "excluded"
       }
     };
-    
+
     params.charge.metadata.evidence = Octobat.getTaxEvidence().id;
-    
+
     if (Octobat.getCoupon() != null) {
       params.charge.coupon = Octobat.getCoupon().id;
     }
-    
+
   }
-  
+
   return JSON.stringify(params);
 }
 
@@ -2811,13 +2845,14 @@ var OctobatJS = function() {
   this.valid_tax_id = null,
   this.coupon = null,
   this.plan = null,
-  this.version = "2.1.1"
+  this.sku = null,
+  this.version = "2.2.0"
 }
 
 
 
 OctobatJS.prototype = {
-  
+
   init: function(e) {
     return 1 === document.querySelectorAll(e).length ? (this.form_selector = e, bindOctobatForm(), !0) : !1
   },
@@ -2916,13 +2951,13 @@ OctobatJS.prototype = {
   createSubscription: function(handler) {
     if (handler == null)
       handler = {};
-      
+
     return chargeCustomer("subscriptions", handler);
   },
   createCharge: function(handler) {
     if (handler == null)
       handler = {};
-    
+
     return chargeCustomer("charges", handler);
   },
   refreshGatewayPKey: function() {
@@ -2943,11 +2978,17 @@ OctobatJS.prototype = {
   setPlan: function(e) {
     return this.plan = e;
   },
+  getSku: function() {
+    return this.sku;
+  },
+  setSku: function(e) {
+    return this.sku = e;
+  },
   getVersion: function() {
     return this.version;
   }
-  
-  
+
+
 }
 
 window.onload ? (v = window.onload, x = function() {
@@ -2955,10 +2996,6 @@ window.onload ? (v = window.onload, x = function() {
  }, window.onload = x) : window.onload = bindOctobatForm
 
 module.exports = new OctobatJS();
-
-
-
-
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/index.js","/")
 
